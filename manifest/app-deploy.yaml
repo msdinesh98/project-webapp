@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      initContainers:
+        - name: database
+          image: msdinesh98/k8s1:dbimage
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h db-service -p 5432 -U postgres; do
+                echo "Waiting for database to be ready..."
+                sleep 2
+              done
+      containers:
+        - name: myapp
+          image: msdinesh98/k8s1:appimage
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-svc
+spec:
+  type: LoadBalancer
+  selector:
+    app: web-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
